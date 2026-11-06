@@ -1,8 +1,25 @@
-const SHELL="tid-shell-ec133645a6", MEDIA="tid-media-v1";
+const SHELL="tid-shell-e9172c0e08", MEDIA="tid-media-v1";
 const CORE=["./","./index.html","./manifest.webmanifest","./icon-180.png","./icon-192.png","./icon-512.png"];
-self.addEventListener("install",e=>{ e.waitUntil(caches.open(SHELL).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())); });
+const APP_MARK='id="tabbar"', NET_WAIT=2500; // only real app pages may replace the cached shell; a dead network gets this long before the cached app is served
+self.addEventListener("install",e=>{ e.waitUntil(caches.open(SHELL).then(c=>c.addAll(CORE.map(u=>new Request(u,{cache:"reload"})))).then(()=>self.skipWaiting())); });
 self.addEventListener("activate",e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.indexOf("tid-shell-")===0&&k!==SHELL).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });
 async function shellFallback(){ const c=await caches.open(SHELL); return (await c.match("./index.html"))||(await c.match("./"))||(await caches.match("./index.html"))||new Response("Offline",{status:503}); }
+async function navigate(req){
+  const c=await caches.open(SHELL);
+  const cached=(await c.match("./index.html"))||(await c.match("./"));
+  const net=(async()=>{
+    const r=await fetch(req);
+    if(!r.ok) return null;
+    const t=await r.text();
+    if(t.indexOf(APP_MARK)<0) return null; // captive portal or some other page: never show it, never cache it
+    const page=()=>new Response(t,{status:200,headers:{"Content-Type":"text/html; charset=utf-8"}});
+    c.put("./index.html",page()).catch(()=>{});
+    return page();
+  })().catch(()=>null);
+  if(!cached) return (await net)||shellFallback();
+  const r=await Promise.race([net,new Promise(res=>setTimeout(()=>res(null),NET_WAIT))]);
+  return r||cached;
+}
 async function media(req){
   const cache=await caches.open(MEDIA); let hit=await cache.match(req.url);
   if(!hit){ try{ const r=await fetch(req.url); if(!r.ok) return r; await cache.put(req.url,r.clone()); hit=r; }catch(e){ return new Response("",{status:504}); } }
@@ -16,10 +33,7 @@ async function media(req){
 self.addEventListener("fetch",e=>{
   const req=e.request; if(req.method!=="GET") return;
   const url=new URL(req.url);
-  if(req.mode==="navigate"){
-    e.respondWith(fetch(req).then(r=>{ if(r.ok){ const cp=r.clone(); caches.open(SHELL).then(c=>c.put("./index.html",cp)); } return r; }).catch(shellFallback));
-    return;
-  }
+  if(req.mode==="navigate"){ e.respondWith(navigate(req).catch(shellFallback)); return; }
   if(url.origin===self.location.origin && url.pathname.indexOf("/audio/")>=0){ e.respondWith(media(req)); return; }
   if(url.origin===self.location.origin || /(^|\.)fonts\.(googleapis|gstatic)\.com$/.test(url.hostname)){
     e.respondWith(caches.match(req).then(hit=>hit||fetch(req).then(r=>{ if(r.ok||r.type==="opaque"){ const cp=r.clone(); caches.open(SHELL).then(c=>c.put(req,cp)); } return r; }).catch(()=>hit||new Response("",{status:504}))));

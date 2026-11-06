@@ -5,9 +5,9 @@
 :root{
   --bg:#EEF2F7; --surface:#FFFFFF; --surface2:#F4F6FA; --ink:#0F1B2D; --muted:#5B6879; --line:#DCE3EE; --line2:#EAEFF6;
   --accent:#2B5FC7; --accent-ink:#FFFFFF; --accent-soft:#E6EDFB; --accent-deep:#1F4699;
-  --good:#15703C; --good-soft:#E1F4E8; --warn:#A96300; --warn-soft:#FBF0D9; --bad:#C43C2B; --bad-soft:#FCE8E4;
+  --good:#15703C; --good-soft:#E1F4E8; --warn:#A96300; --warn-soft:#FBF0D9; --bad:#C43C2B; --bad-soft:#FCE8E4; --good-ink:#FFFFFF; --bad-ink:#FFFFFF;
   --ball:#D7F04A; --ball-ink:#1B2410; --ball-deep:#B9D22E;
-  --hero1:#2F6BC4; --hero2:#142F60; --hero-ink:#FFFFFF; --hero-muted:rgba(255,255,255,.74); --hero-line:rgba(255,255,255,.22); --hero-fill:rgba(255,255,255,.14);
+  --hero1:#2F6BC4; --hero2:#142F60; --hero-ink:#FFFFFF; --hero-muted:rgba(255,255,255,.86); --hero-line:rgba(255,255,255,.22); --hero-fill:rgba(255,255,255,.14);
   --shadow:0 1px 2px rgba(15,27,45,.05),0 10px 28px -14px rgba(15,27,45,.25);
   --glass:rgba(255,255,255,.93);
   --display:ui-rounded,"SF Pro Rounded",-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;
@@ -17,13 +17,13 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0B1220; --surface:#131C2E; --surface2:#1A2538; --ink:#EAF0F8; --muted:#98A6BB; --line:#25334C; --line2:#1D2A42;
   --accent:#7FA8F0; --accent-ink:#0B1220; --accent-soft:#1B2B4A; --accent-deep:#5B8AE0;
-  --good:#4FCB86; --good-soft:#15331F; --warn:#E8B04E; --warn-soft:#3A2D12; --bad:#F2806A; --bad-soft:#40201A;
+  --good:#4FCB86; --good-soft:#15331F; --warn:#E8B04E; --warn-soft:#3A2D12; --bad:#F2806A; --bad-soft:#40201A; --good-ink:#0B1220; --bad-ink:#0B1220;
   --hero1:#1F4C98; --hero2:#0D1B38; --hero-line:rgba(255,255,255,.18); --hero-fill:rgba(255,255,255,.12);
   --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 30px -14px rgba(0,0,0,.65); --glass:rgba(19,28,46,.94); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0B1220; --surface:#131C2E; --surface2:#1A2538; --ink:#EAF0F8; --muted:#98A6BB; --line:#25334C; --line2:#1D2A42;
   --accent:#7FA8F0; --accent-ink:#0B1220; --accent-soft:#1B2B4A; --accent-deep:#5B8AE0;
-  --good:#4FCB86; --good-soft:#15331F; --warn:#E8B04E; --warn-soft:#3A2D12; --bad:#F2806A; --bad-soft:#40201A;
+  --good:#4FCB86; --good-soft:#15331F; --warn:#E8B04E; --warn-soft:#3A2D12; --bad:#F2806A; --bad-soft:#40201A; --good-ink:#0B1220; --bad-ink:#0B1220;
   --hero1:#1F4C98; --hero2:#0D1B38; --hero-line:rgba(255,255,255,.18); --hero-fill:rgba(255,255,255,.12);
   --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 30px -14px rgba(0,0,0,.65); --glass:rgba(19,28,46,.94); color-scheme:dark}
 *{box-sizing:border-box}
@@ -108,12 +108,12 @@ select{appearance:none;-webkit-appearance:none;padding-right:34px;background-ima
 .tab svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .tab.on{color:var(--accent)}
 .tab:active{transform:none;background:var(--accent-soft)}
-.tab .dotb{position:absolute;top:4px;left:calc(50% + 8px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--bad);color:#fff;font-size:.68rem;font-weight:800;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+.tab .dotb{position:absolute;top:4px;left:calc(50% + 8px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--bad);color:var(--bad-ink);font-size:.68rem;font-weight:800;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
 /* toast */
 #toast{position:fixed;left:50%;bottom:calc(var(--tabh) + 18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:40;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;width:max-content;max-width:calc(100vw - 32px)}
 body.focus #toast{bottom:calc(24px + env(safe-area-inset-bottom,0px))}
 .toastmsg{background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:700;font-size:.92rem;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:toastin .25s ease-out both;transform-origin:center bottom;max-width:calc(100vw - 32px);text-align:center}
-.toastmsg.good{background:var(--good);color:#fff}
+.toastmsg.good{background:var(--good);color:var(--good-ink)}
 .toastmsg.ball{background:var(--ball);color:var(--ball-ink)}
 /* hero: today's match */
 .hero{background:linear-gradient(135deg,var(--hero1),var(--hero2));color:var(--hero-ink);border-radius:var(--r);padding:20px;position:relative;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;border:none}
@@ -161,7 +161,7 @@ body.focus #toast{bottom:calc(24px + env(safe-area-inset-bottom,0px))}
 .seg.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 ul.habits{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .habit{width:100%;display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:12px;text-align:left;background:var(--surface2);border:1px solid transparent;color:var(--ink);padding:12px 14px;border-radius:14px;min-height:56px}
-.habit .tick{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;color:#fff;transition:background-color .15s,border-color .15s}
+.habit .tick{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;color:var(--good-ink);transition:background-color .15s,border-color .15s}
 .habit.on{background:var(--good-soft);border-color:transparent}
 .habit.on .tick{background:var(--good);border-color:var(--good);animation:pop .3s ease-out}
 .habit.on .hlabel{color:var(--ink)}
@@ -198,7 +198,7 @@ ul.skills{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:
 .snum{font-family:var(--display);font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
 .sname{min-width:0;font-size:.92rem}
 .schip{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;padding:3px 8px;border-radius:999px;background:var(--surface);color:var(--muted);white-space:nowrap}
-.schip.ok{background:var(--good);color:#fff}
+.schip.ok{background:var(--good);color:var(--good-ink)}
 .schip.mid{background:var(--warn-soft);color:var(--warn)}
 .numrow{display:flex;align-items:center;gap:8px}
 .numrow input{flex:1;font-family:var(--display);font-size:1.8rem;font-weight:700;min-height:60px;font-variant-numeric:tabular-nums}
@@ -224,7 +224,7 @@ details.topic>summary{padding:14px 16px;display:grid;grid-template-columns:auto 
 .bar.ready>span{background:var(--good)}
 .pct{font-family:var(--display);font-weight:800;font-size:.95rem;font-variant-numeric:tabular-nums;min-width:3.2ch;text-align:right}
 .pill{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:999px;background:var(--surface2);color:var(--muted);white-space:nowrap}
-.pill.ready{background:var(--good);color:#fff}
+.pill.ready{background:var(--good);color:var(--good-ink)}
 .pill.learning{background:var(--accent-soft);color:var(--accent)}
 .detail{padding:12px 16px 16px;display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line2)}
 ul.cards{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
@@ -293,7 +293,9 @@ ol.steps li::marker{color:var(--accent);font-weight:800}
 .selfgrade button.suggest{background:var(--accent);color:var(--accent-ink);box-shadow:0 6px 16px -8px var(--accent)}
 .sugg{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap} .sugg b{font-family:var(--display);font-size:1.6rem;font-weight:800;line-height:1} .sugg .lab{font-weight:700} .sugg .muted{font-size:.9rem;color:var(--muted)}
 ul.kp{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
-ul.kp li{display:grid;grid-template-columns:1.7rem 1fr;gap:10px;align-items:start;font-size:.95rem;line-height:1.4}
+ul.kp li{display:block}
+.kp .kpbtn{display:grid;grid-template-columns:1.7rem 1fr;gap:10px;align-items:start;width:100%;text-align:left;background:transparent;border:1px solid transparent;padding:6px 8px;min-height:44px;border-radius:12px;font-weight:500;font-size:.95rem;line-height:1.4;color:var(--ink)}
+.kp .kpbtn:active{background:var(--surface2);transform:none}
 .kp .mk{font-weight:800;text-align:center;border-radius:8px;height:1.55rem;line-height:1.55rem;font-size:.85rem}
 .kp .st{display:block;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:1px}
 .kp .hit .mk{background:var(--good-soft);color:var(--good)} .kp .hit .st{color:var(--good)}
@@ -536,15 +538,17 @@ function crash(root, e){
   try{ console.error(e); }catch(_){}
   root.replaceChildren(el("section",{class:"panel crash"},
     el("h2",null,"Something went wrong on this screen"),
-    el("p",{class:"tip"},"Your progress is safe on this device. Tap below to go back to the overview."),
+    el("p",{class:"tip"},"Your progress is safe on this device. Tap below to go back to the overview. If this screen keeps coming back, Reset keeps a backup copy of your data and starts clean."),
     el("p",{class:"err"},String(e&&e.message||e).slice(0,200)),
-    el("div",{class:"row"},el("button",{class:"primary",onclick:()=>{ drill=null; reader=null; gym=null; gameView=null; if(urgeTick){ clearInterval(urgeTick); urgeTick=null; } showHome(); }},"Back to overview"),el("button",{class:"ghost",onclick:()=>location.reload()},"Reload the app"))
+    el("div",{class:"row"},el("button",{class:"primary",onclick:()=>{ drill=null; reader=null; gym=null; gameView=null; if(urgeTick){ clearInterval(urgeTick); urgeTick=null; } showHome(); }},"Back to overview"),el("button",{class:"ghost",onclick:()=>location.reload()},"Reload the app"),el("button",{class:"ghost",onclick:resetApp},"Reset app data"))
   ));
 }
 window.addEventListener("error",ev=>{ try{ if(ev&&ev.message&&!/ResizeObserver|Script error/.test(ev.message)) toast("Hiccup: "+String(ev.message).slice(0,60)); }catch(e){} });
 window.addEventListener("unhandledrejection",ev=>{ try{ const r=ev&&ev.reason; const m=r&&(r.message||r.code); if(m&&!/abort|cancel/i.test(String(m))) toast("Hiccup: "+String(m).slice(0,60)); }catch(e){} });
 
-function lsLoad(){ try{ const j=JSON.parse(localStorage.getItem(LS_KEY)||"null"); if(j){ state.progress=j.progress||{}; state.extra=j.extra||{}; state.lessons=j.lessons||{}; state.math=(j.math&&j.math.skills)?j.math:{skills:{}}; state.game=normGame(j.game); state.meta=Object.assign(state.meta, j.meta||{}); } }catch(e){} if(!state.game) state.game=normGame(null); }
+const isObj=x=>!!x&&typeof x==="object"&&!Array.isArray(x);
+function lsLoad(){ try{ const j=JSON.parse(localStorage.getItem(LS_KEY)||"null"); if(isObj(j)){ state.progress=isObj(j.progress)?j.progress:{}; state.extra=isObj(j.extra)?j.extra:{}; state.lessons=isObj(j.lessons)?j.lessons:{}; state.math=(isObj(j.math)&&isObj(j.math.skills))?j.math:{skills:{}}; state.game=normGame(j.game); state.meta=Object.assign(state.meta, isObj(j.meta)?j.meta:{}); } }catch(e){} if(!state.game) state.game=normGame(null); }
+function resetApp(){ try{ localStorage.setItem("teachit-backup-"+Date.now(), localStorage.getItem(LS_KEY)||""); }catch(e){} try{ localStorage.removeItem(LS_KEY); }catch(e){} location.reload(); }
 function lsSave(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({progress:state.progress, extra:state.extra, lessons:state.lessons, math:state.math, game:state.game, meta:state.meta})); }catch(e){} }
 
 const writeChains=new Map();
@@ -588,15 +592,16 @@ function interleave(cards){
   return out;
 }
 function pickSession(topicId){
-  const N=5, MAXNEW=topicId?N:3, now=Date.now();
+  const N=5, now=Date.now();
   const cards=allCards().filter(c=>!topicId||c.t===topicId);
   const P=state.progress;
   const due=cards.filter(c=>P[c.id]&&P[c.id].due<=now).sort((a,b)=>P[a.id].due-P[b.id].due);
   const fresh=orderNew(cards.filter(c=>!P[c.id]));
-  const dueTake=Math.min(due.length, N-Math.min(MAXNEW,fresh.length));
-  let pick=due.slice(0,dueTake);
-  pick=pick.concat(fresh.slice(0,N-pick.length));
-  if(pick.length<N) pick=pick.concat(due.slice(dueTake, dueTake+(N-pick.length)));
+  // Reviews first: retrieval of what is due is what makes ideas stick. New ideas fill the remaining slots,
+  // at most three a day in the daily mix once reviews exist, and none while more than fifteen are waiting.
+  let pick=due.slice(0,N);
+  const newCap=topicId?N:(due.length>15?0:Math.max(3,N-pick.length));
+  pick=pick.concat(fresh.slice(0,Math.min(newCap,N-pick.length)));
   if(pick.length<N){
     const later=cards.filter(c=>P[c.id]&&!pick.includes(c)).sort((a,b)=>P[a.id].due-P[b.id].due);
     pick=pick.concat(later.slice(0,N-pick.length));
@@ -817,12 +822,19 @@ function smartCheck(card, answer){
     const status=giveUp?"miss":(cov>=0.55||(cov>=0.42&&n>=2))?"hit":(cov>=0.22||(n>=1&&cov>=0.15))?"part":"miss";
     return {text:k,status,cov:Math.round(cov*100)/100};
   });
-  const hits=points.filter(p=>p.status==="hit").length, parts=points.filter(p=>p.status==="part").length;
-  const frac=(hits+0.5*parts)/Math.max(1,points.length);
+  return scSuggest({points, lang, words, giveUp, user:false});
+}
+/* Suggested 0–4 from coverage. Once the user has corrected a point by hand (user=true) the length caps no longer apply. */
+function scSuggest(sc){
+  const hits=sc.points.filter(p=>p.status==="hit").length, parts=sc.points.filter(p=>p.status==="part").length;
+  const frac=(hits+0.5*parts)/Math.max(1,sc.points.length);
   let suggest= frac>=0.8?4 : frac>=0.6?3 : frac>=0.35?2 : frac>0?1 : 0;
-  if(giveUp) suggest=0;
-  if(words<8) suggest=Math.min(suggest,1); else if(words<18) suggest=Math.min(suggest,3);
-  return {points, suggest, hits, parts, lang, words};
+  if(!sc.user){ if(sc.giveUp) suggest=0; if(sc.words<8) suggest=Math.min(suggest,1); else if(sc.words<18) suggest=Math.min(suggest,3); }
+  sc.hits=hits; sc.parts=parts; sc.suggest=suggest; return sc;
+}
+function flipPoint(i){
+  const d=drill; if(!d||!d.smart||!d.smart.points[i]) return;
+  const p=d.smart.points[i]; p.status=p.status==="hit"?"miss":"hit"; d.smart.user=true; scSuggest(d.smart); renderDrill();
 }
 
 
@@ -1401,9 +1413,14 @@ function normGame(g){
   // Old defaults saved on a device get the new wording; custom text is left alone.
   hs.forEach(h=>{ if(h.label==="Phone out of the bedroom, lights out on time") h.label="Lights out on time"; });
   const plans=Object.assign({},DEFAULT_PLANS,(g.plans&&typeof g.plans==="object")?g.plans:{});
+  const days={};
+  if(g.days&&typeof g.days==="object") for(const [k,v] of Object.entries(g.days)){
+    if(!v||typeof v!=="object"||!/^\d{4}-\d{2}-\d{2}$/.test(k)) continue;
+    days[k]={done:Array.isArray(v.done)?v.done.filter(x=>typeof x==="string").slice(0,40):[], win:typeof v.win==="string"?v.win.slice(0,160):""};
+  }
   if(plans.lust==="If the urge hits, then I leave the room, put the phone somewhere else and do 20 push-ups.") plans.lust=DEFAULT_PLANS.lust;
   return {habits:hs.length?hs:d.habits, identity:String(g.identity||"").slice(0,200), plans,
-    days:(g.days&&typeof g.days==="object")?Object.assign({},g.days):{}, urges:Array.isArray(g.urges)?g.urges.slice(-300):[]};
+    days, urges:Array.isArray(g.urges)?g.urges.filter(u=>u&&typeof u==="object").slice(-300):[]};
 }
 function saveGame(){ lsSave(); writeDoc("game/state", state.game); }
 function gameDayKey(off){ const d=new Date(); d.setDate(d.getDate()+(off||0)); return dayStr(d); }
@@ -2025,11 +2042,12 @@ function renderDrillInner(root){
     root.append(el("section",{class:"panel"},
       d.error?el("p",{class:"err",role:"alert"},d.error):null,
       el("h3",null,sc?"Smart check · what a strong answer covers":"A strong answer covers"),
-      sc?el("ul",{class:"kp","aria-label":"Key points and whether your answer covered them"},sc.points.map(p=>el("li",{class:p.status},
-          el("span",{class:"mk","aria-hidden":"true"},ST[p.status][0]),
-          el("span",null,el("span",{class:"st"},ST[p.status][1]),p.text))))
+      sc?el("ul",{class:"kp","aria-label":"Key points and whether your answer covered them. Tap a point to correct it."},sc.points.map((p,i)=>el("li",{class:p.status},
+          el("button",{type:"button",class:"kpbtn","aria-pressed":p.status==="hit"?"true":"false",onclick:()=>flipPoint(i)},
+            el("span",{class:"mk","aria-hidden":"true"},ST[p.status][0]),
+            el("span",null,el("span",{class:"st"},ST[p.status][1]),p.text)))))
         :el("ul",null,card.k.map(k=>el("li",null,k))),
-      sc?el("p",{class:"tip"},"Matched your words against each point, offline. It can't judge reasoning or an example, so you have the final say."+(sc.lang==="nl"?" Dutch answers are matched more loosely.":"")):null,
+      sc?el("p",{class:"tip"},"Matched your words against each point, offline. Tap a point to correct it if you said it in other words. It can't judge reasoning or an example, so you have the final say."+(sc.lang==="nl"?" Dutch answers are matched more loosely.":"")):null,
       el("h3",null,"How did you do?"),
       sc?el("div",{class:"sugg"},el("span",{class:"lab"},"Suggested"),el("b",null,String(sc.suggest)),el("span",{class:"lab"},SCORE_LABEL[sc.suggest]),el("span",{class:"muted"},sc.suggest>=4?"Tap 5 if you also gave an example of your own.":sc.suggest>=2?"Tap higher if you said it in other words.":"")):null,
       el("div",{class:"selfgrade"},[0,1,2,3,4,5].map(n=>el("button",{class:(sc&&n===sc.suggest)?"suggest":null,onclick:()=>selfScore(n),"aria-label":n+" out of 5, "+SCORE_LABEL[n]+((sc&&n===sc.suggest)?", suggested":"")},String(n)))),

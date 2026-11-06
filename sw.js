@@ -1,4 +1,4 @@
-const SHELL="tid-shell-e9172c0e08", MEDIA="tid-media-v1";
+const SHELL="tid-shell-e641830382", MEDIA="tid-media-v1";
 const CORE=["./","./index.html","./manifest.webmanifest","./icon-180.png","./icon-192.png","./icon-512.png"];
 const APP_MARK='id="tabbar"', NET_WAIT=2500; // only real app pages may replace the cached shell; a dead network gets this long before the cached app is served
 self.addEventListener("install",e=>{ e.waitUntil(caches.open(SHELL).then(c=>c.addAll(CORE.map(u=>new Request(u,{cache:"reload"})))).then(()=>self.skipWaiting())); });

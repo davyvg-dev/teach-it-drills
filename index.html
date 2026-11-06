@@ -290,6 +290,15 @@ ol.steps li::marker{color:var(--accent);font-weight:800}
 .followq p{font-weight:600}
 .selfgrade{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
 .selfgrade button{font-family:var(--display);font-size:1.25rem;font-weight:800;padding:8px 0;background:var(--surface2);border-color:transparent;color:var(--ink);border-radius:12px;min-height:54px}
+.selfgrade button.suggest{background:var(--accent);color:var(--accent-ink);box-shadow:0 6px 16px -8px var(--accent)}
+.sugg{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap} .sugg b{font-family:var(--display);font-size:1.6rem;font-weight:800;line-height:1} .sugg .lab{font-weight:700} .sugg .muted{font-size:.9rem;color:var(--muted)}
+ul.kp{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+ul.kp li{display:grid;grid-template-columns:1.7rem 1fr;gap:10px;align-items:start;font-size:.95rem;line-height:1.4}
+.kp .mk{font-weight:800;text-align:center;border-radius:8px;height:1.55rem;line-height:1.55rem;font-size:.85rem}
+.kp .st{display:block;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:1px}
+.kp .hit .mk{background:var(--good-soft);color:var(--good)} .kp .hit .st{color:var(--good)}
+.kp .part .mk{background:var(--warn-soft);color:var(--warn)} .kp .part .st{color:var(--warn)}
+.kp .miss .mk{background:var(--bad-soft);color:var(--bad)} .kp .miss .st{color:var(--bad)}
 .biggest{font-family:var(--display);font-size:3rem;font-weight:800;line-height:1;letter-spacing:-.03em}
 .biggest span{font-size:1rem;color:var(--muted);font-weight:600;margin-left:8px;letter-spacing:0}
 .hero .biggest span{display:block;margin:8px 0 0}
@@ -715,6 +724,107 @@ function sampleErrMsg(e){
   return "Grading failed. Check your connection and tap Grade again.";
 }
 const gradingAvailable = ()=> !!sample && !gradingOff;
+
+/* ---------- offline smart check: which key points did the answer cover? ---------- */
+/* Pure text matching, no model. Both the key points and the answer go through the same
+   normaliser (lowercase, strip accents, number words -> digits, Dutch -> English concept map,
+   light stemmer), then each key point's content terms are weighted by rarity across all key
+   points and matched against the answer with a tolerance for dictation errors. */
+const SC_STOP = new Set(("a an the and or but if then so of to in on at by for with from as is are was were be been being am it its this that these those they them their there here he she his her him we our us you your i me my who whom which what when where why how not no yes do does did done doing have has had having can could should would will shall may might must than too very also just only more most much many some any each every all both few less least into over under about after before between through during without within up down out off again once because while until such like eg etc one ones own same other another often usually mostly really thing things something someone anyone way ways get gets got getting make makes made making use used using uses say says said saying see sees seen well even still instead rather around per versus vs via let lets go goes going went come comes came take takes took put puts give gives gave keep keeps kept know knows knew think thinks thought want wants wanted need needs needed mean means meant tell tells told ask asks asked find finds found look looks looked feel feels felt try tries tried seem seems seemed start starts started turn turns turned show shows showed become becomes became leave leaves left call calls called work works worked lot lots bit kind sort stuff yeah yes ok okay um uh hmm basically actually literally right anyway sure maybe probably already always never sometimes ever quite pretty however whether either neither nor though although yet else far enough able back big little new old good bad high low long short better best worse worst first second third next last early late whole part point points example examples case cases "+
+"de het een en of maar als dan dus van naar in op bij voor met uit aan is zijn was waren ben bent wordt worden werd werden er hier daar dit dat deze die ze zij hij wij we jij je u ik mij me mijn ons onze jouw jullie hun hen wie wat wanneer waar waarom hoe niet geen wel ja nee doen doet deed heb hebt heeft hebben had hadden kan kun kunnen kon konden zou zouden zal zullen moet moeten mag mogen te ook nog al alleen meer meest veel weinig elke iedere alle allemaal beide over onder na voordat tussen door tijdens zonder binnen weer omdat terwijl totdat zoals bijvoorbeeld iets iemand manier eigen zelfde andere vaak meestal echt ding dingen toch eigenlijk gewoon even heel erg zo om nou eh ehm ehh dat's zo'n z'n m'n d'r 't 'n gaan gaat ging komen komt kwam nemen neemt nam zeggen zegt zei weten weet wist denken denkt dacht willen wil wilde vinden vindt vond kijken kijkt keek voelen voelt voelde lijken lijkt leek proberen probeert krijgen krijgt kreeg maken maakt maakte laten laat liet houden houdt hield zetten zet zette geven geeft gaf soort beetje best heel").split(" "));
+const SC_NUM = {zero:"0",one:"1",two:"2",three:"3",four:"4",five:"5",six:"6",seven:"7",eight:"8",nine:"9",ten:"10",eleven:"11",twelve:"12",thirteen:"13",fourteen:"14",fifteen:"15",sixteen:"16",seventeen:"17",eighteen:"18",nineteen:"19",twenty:"20",thirty:"30",forty:"40",fifty:"50",sixty:"60",seventy:"70",eighty:"80",ninety:"90",hundred:"100",thousand:"1000",million:"1000000",half:"0.5",quarter:"0.25",
+  nul:"0",twee:"2",drie:"3",vier:"4",vijf:"5",zes:"6",zeven:"7",acht:"8",negen:"9",tien:"10",elf:"11",twaalf:"12",dertien:"13",veertien:"14",vijftien:"15",zestien:"16",zeventien:"17",achttien:"18",negentien:"19",twintig:"20",dertig:"30",veertig:"40",vijftig:"50",zestig:"60",zeventig:"70",tachtig:"80",negentig:"90",honderd:"100",duizend:"1000",miljoen:"1000000"};
+/* Dutch word -> English concept, and English near-synonyms -> one concept. Applied before stemming. */
+const SC_SYN = {
+  klant:"client",klanten:"client",koper:"buyer",kopers:"buyer",verkoper:"seller",verkopers:"seller",verkoop:"sales",verkopen:"sell",prijs:"price",prijzen:"price",geld:"money",kosten:"cost",kost:"cost",risico:"risk",kans:"chance",kansen:"chance",waarschijnlijkheid:"probability",waarde:"value",verwachting:"expectation",verwachte:"expected",voordeel:"edge",nadeel:"disadvantage",winst:"profit",verlies:"loss",verliezen:"lose",rente:"interest",schuld:"debt",schulden:"debt",belasting:"tax",belastingen:"tax",inzet:"stake",inkomen:"income",omzet:"revenue",bewijs:"proof",tijd:"time",dag:"day",dagen:"day",maand:"month",maanden:"month",jaar:"year",jaren:"year",uur:"hour",uren:"hour",minuut:"minute",minuten:"minute",seconde:"second",mensen:"people",mens:"person",persoon:"person",vraag:"question",vragen:"question",antwoord:"answer",antwoorden:"answer",markt:"market",aanbod:"offer",aanbieding:"offer",garantie:"guarantee",slaap:"sleep",slapen:"sleep",gewoonte:"habit",gewoontes:"habit",gewoonten:"habit",doel:"goal",doelen:"goal",fout:"error",fouten:"error",vergissing:"mistake",voorbeeld:"example",procent:"percent",percentage:"percent",euro:"euro",groei:"growth",groeien:"grow",samengestelde:"compound",samenstellen:"compound",spaargeld:"savings",sparen:"save",beleggen:"invest",belegging:"investment",beleggingen:"investment",aandelen:"stock",aandeel:"share",fonds:"fund",fondsen:"fund",indexfonds:"index",spreiding:"diversification",spreiden:"diversify",inflatie:"inflation",vermogen:"wealth",rijkdom:"wealth",bedrijf:"business",bedrijven:"business",onderneming:"business",ondernemer:"entrepreneur",werk:"work",werken:"work",werknemer:"employee",werknemers:"employee",baas:"boss",leiding:"management",macht:"power",invloed:"influence",hefboom:"leverage",hefboomwerking:"leverage",code:"code",software:"software",programma:"program",media:"media",inhoud:"content",publiek:"audience",distributie:"distribution",toestemming:"permission",eigendom:"ownership",eigenaar:"owner",keuze:"choice",keuzes:"choice",beslissing:"decision",beslissingen:"decision",besluit:"decision",gevolg:"consequence",gevolgen:"consequence",oorzaak:"cause",probleem:"problem",problemen:"problem",oplossing:"solution",oplossingen:"solution",situatie:"situation",implicatie:"implication",implicaties:"implication",behoefte:"need",behoeften:"need",nut:"benefit",opbrengst:"payoff",resultaat:"result",resultaten:"result",uitkomst:"outcome",meting:"measure",meten:"measure",test:"test",testen:"test",fouten:"error",gegevens:"data",trainen:"train",training:"training",model:"model",modellen:"model",regel:"rule",regels:"rule",wet:"law",grens:"boundary",grenzen:"boundary",limiet:"limit",focus:"focus",aandacht:"attention",afleiding:"distraction",telefoon:"phone",mobiel:"phone",drang:"urge",verleiding:"temptation",wilskracht:"willpower",zelfbeheersing:"self-control",identiteit:"identity",omgeving:"environment",signaal:"cue",beloning:"reward",straf:"punishment",stress:"stress",energie:"energy",gezondheid:"health",eten:"food",voedsel:"food",beweging:"exercise",sporten:"exercise",bewegen:"move",licht:"light",cafeine:"caffeine",koffie:"coffee",alcohol:"alcohol",herinneren:"remember",herinnering:"memory",geheugen:"memory",leren:"learn",leer:"learn",oefenen:"practice",oefening:"practice",herhalen:"repeat",herhaling:"repetition",ophalen:"retrieval",terughalen:"retrieval",uitleggen:"explain",uitleg:"explanation",begrijpen:"understand",begrip:"understanding",kennis:"knowledge",vaardigheid:"skill",vaardigheden:"skill",ervaring:"experience",feedback:"feedback",schrijven:"write",lezen:"read",praten:"talk",spreken:"speak",luisteren:"listen",onderhandelen:"negotiate",onderhandeling:"negotiation",alternatief:"alternative",anker:"anchor",ankeren:"anchor",eerlijk:"honest",vertrouwen:"trust",relatie:"relationship",relaties:"relationship",reputatie:"reputation",belofte:"promise",commitment:"commitment",samenwerking:"cooperation",concurrent:"competitor",concurrentie:"competition",strategie:"strategy",spel:"game",spellen:"game",speler:"player",tegenstander:"opponent",zet:"move",evenwicht:"equilibrium",steekproef:"sample",variantie:"variance",gemiddelde:"average",gemiddeld:"average",verdeling:"distribution",toeval:"luck",geluk:"luck",pech:"bad-luck",patroon:"pattern",patronen:"pattern",ruis:"noise",signaal:"signal",voorspelling:"prediction",voorspellen:"predict",schatting:"estimate",schatten:"estimate",zekerheid:"certainty",onzekerheid:"uncertainty",overtuiging:"belief",mening:"opinion",ego:"ego",angst:"fear",moed:"courage",geduld:"patience",discipline:"discipline",karakter:"character",wijsheid:"wisdom",waarheid:"truth",eenvoud:"simplicity",eenvoudig:"simple",complex:"complex",systeem:"system",proces:"process",stap:"step",stappen:"step",plan:"plan",planning:"plan",prioriteit:"priority",belangrijk:"important",belangrijkste:"important",urgent:"urgent",deadline:"deadline",project:"project",team:"team",vergadering:"meeting",afspraak:"appointment",contract:"contract",factuur:"invoice",betalen:"pay",betaling:"payment",korting:"discount",gratis:"free",duur:"expensive",goedkoop:"cheap",kwaliteit:"quality",niche:"niche",positionering:"positioning",merk:"brand",casestudy:"case-study",referentie:"reference",ketting:"chain",schaal:"scale",schalen:"scale",productiseren:"productize",product:"product",producten:"product",dienst:"service",diensten:"service",abonnement:"subscription",terugkerend:"recurring",terugkerende:"recurring",marge:"margin",eenheid:"unit",funnel:"funnel",lead:"lead",leads:"lead",email:"email",bellen:"call",gesprek:"conversation",gesprekken:"conversation",bezwaar:"objection",bezwaren:"objection",
+  // English near-synonyms -> one concept
+  labour:"labor",behaviour:"behavior",behaviours:"behavior",favour:"favor",favours:"favor",colour:"color",honour:"honor",organisation:"organization",organisations:"organization",organise:"organize",organised:"organize",practise:"practice",realise:"realize",realised:"realize",recognise:"recognize",recognised:"recognize",prioritise:"prioritize",prioritised:"prioritize",optimise:"optimize",optimised:"optimize",minimise:"minimize",maximise:"maximize",analyse:"analyze",analysed:"analyze",defence:"defense",licence:"license",centre:"center",metres:"meter",metre:"meter",programme:"program",
+  customer:"client",customers:"client",clients:"client",purchaser:"buyer",vendor:"seller",pricing:"price",prices:"price",priced:"price",cash:"money",costs:"cost",costly:"cost",risky:"risk",risks:"risk",odds:"probability",probabilities:"probability",likelihood:"probability",profits:"profit",losses:"loss",earnings:"income",turnover:"revenue",revenues:"revenue",evidence:"proof",folks:"people",humans:"person",human:"person",individuals:"person",individual:"person",queries:"question",replies:"answer",reply:"answer",response:"answer",responses:"answer",errors:"error",mistake:"error",mistakes:"error",bug:"error",bugs:"error",pct:"percent","%":"percent",eur:"euro","€":"euro",euros:"euro",compounding:"compound",compounded:"compound",compounds:"compound",investing:"invest",invested:"invest",investments:"investment",stocks:"stock",shares:"share",equities:"stock",equity:"stock",funds:"fund",companies:"business",company:"business",firm:"business",firms:"business",employees:"employee",staff:"employee",manager:"boss",managers:"boss",leverage:"leverage",leveraged:"leverage",programme:"program",programs:"program",apps:"software",app:"software",application:"software",choices:"choice",decisions:"decision",decide:"decision",decided:"decision",consequences:"consequence",causes:"cause",problems:"problem",solutions:"solution",situations:"situation",implications:"implication",needs:"need",results:"result",outcomes:"outcome",measurement:"measure",measuring:"measure",measured:"measure",metrics:"measure",metric:"measure",testing:"test",tests:"test",tested:"test",models:"model",rules:"rule",boundaries:"boundary",limits:"limit",distracted:"distraction",distractions:"distraction",smartphone:"phone",mobile:"phone",urges:"urge",temptations:"temptation",cues:"cue",trigger:"cue",triggers:"cue",rewards:"reward",rewarding:"reward",exercise:"exercise",workout:"exercise",training:"train",trained:"train",remembering:"remember",memories:"memory",learning:"learn",learned:"learn",learnt:"learn",practise:"practice",practising:"practice",practicing:"practice",practiced:"practice",repeated:"repeat",repeating:"repeat",repetitions:"repetition",retrieve:"retrieval",retrieving:"retrieval",recall:"retrieval",recalling:"retrieval",explaining:"explain",explained:"explain",explanations:"explanation",understood:"understand",understanding:"understand",skills:"skill",negotiating:"negotiate",negotiations:"negotiation",alternatives:"alternative",anchoring:"anchor",anchored:"anchor",anchors:"anchor",honesty:"honest",trusted:"trust",relationships:"relationship",promises:"promise",competitors:"competitor",strategies:"strategy",games:"game",players:"player",opponents:"opponent",samples:"sample",averages:"average",mean:"average",patterns:"pattern",predictions:"prediction",predicting:"predict",predicted:"predict",estimates:"estimate",estimated:"estimate",estimating:"estimate",uncertain:"uncertainty",beliefs:"belief",opinions:"opinion",fears:"fear",afraid:"fear",patient:"patience",systems:"system",processes:"process",steps:"step",plans:"plan",planned:"plan",priorities:"priority",importance:"important",projects:"project",teams:"team",meetings:"meeting",contracts:"contract",invoices:"invoice",paying:"pay",paid:"pay",payments:"payment",discounts:"discount",expensive:"expensive",cheaper:"cheap",brands:"brand",references:"reference",scaling:"scale",scalable:"scale",productise:"productize",productising:"productize",productizing:"productize",products:"product",services:"service",subscriptions:"subscription",margins:"margin",units:"unit",funnels:"funnel",emails:"email",calls:"call",calling:"call",conversations:"conversation",objections:"objection",wealthy:"wealth",rich:"wealth",kelly:"kelly",bankroll:"bankroll",bank:"bankroll",stakes:"stake",staking:"stake",bet:"bet",bets:"bet",betting:"bet",wager:"bet",wagers:"bet",back:"back",lay:"lay",laying:"lay",overfit:"overfitting",overfitted:"overfitting",overfits:"overfitting",bayes:"bayesian",prior:"prior",priors:"prior",posterior:"posterior",variance:"variance",volatility:"variance",nap:"nap",naps:"nap",napping:"nap",sleeping:"sleep",slept:"sleep",asleep:"sleep",caffeine:"caffeine",coffee:"caffeine",alcohol:"alcohol",drinking:"alcohol",drinks:"alcohol",tokens:"token",token:"token",prompt:"prompt",prompts:"prompt",prompting:"prompt",context:"context",eval:"evaluation",evals:"evaluation",evaluate:"evaluation",evaluating:"evaluation",evaluations:"evaluation",hallucinate:"hallucination",hallucinates:"hallucination",hallucinations:"hallucination",hallucinating:"hallucination",retrieval:"retrieval",rag:"rag",embedding:"embedding",embeddings:"embedding",agent:"agent",agents:"agent",agentic:"agent",tool:"tool",tools:"tool",tooling:"tool",api:"api",apis:"api",latency:"latency",slow:"slow",slower:"slow",fast:"fast",faster:"fast",quick:"fast",quickly:"fast",bigger:"big",larger:"big",large:"big",huge:"big",smaller:"small",tiny:"small",growth:"grow",growing:"grow",grows:"grow",grew:"grow",increase:"grow",increases:"grow",increasing:"grow",decrease:"shrink",decreases:"shrink",decreasing:"shrink",shrinks:"shrink",reduce:"reduce",reduces:"reduce",reducing:"reduce",reduced:"reduce",lower:"reduce",lowers:"reduce",cut:"reduce",cuts:"reduce",cutting:"reduce",fewer:"reduce",higher:"high",highest:"high",lowest:"low",longer:"long",longest:"long",shorter:"short",shortest:"short",buying:"buy",bought:"buy",buys:"buy",purchase:"buy",purchases:"buy",purchasing:"buy",selling:"sell",sold:"sell",sells:"sell",identify:"identify",identifies:"identify",identified:"identify",identifying:"identify",persuade:"persuade",persuades:"persuade",persuaded:"persuade",persuasive:"persuade",persuasion:"persuade",convince:"persuade",convinces:"persuade",convinced:"persuade",convincing:"persuade"
+};
+function scNorm(text){
+  let s=String(text||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+  s=s.replace(/(\d)[,](\d)/g,"$1.$2").replace(/(\d)\.(\d{3})(?!\d)/g,"$1$2").replace(/%/g," percent ").replace(/€/g," euro ").replace(/\$/g," dollar ");
+  s=s.replace(/[’']/g,"'").replace(/n't\b/g," not").replace(/'s\b/g,"").replace(/'/g,"");
+  return s.split(/[^a-z0-9.\-]+/).map(w=>w.replace(/^[.\-]+|[.\-]+$/g,"")).filter(Boolean);
+}
+function scStem(w){
+  if(/^\d/.test(w)) return w.replace(/\.0+$/,"");
+  if(SC_NUM[w]) return SC_NUM[w];
+  if(SC_SYN[w]) w=SC_SYN[w];
+  if(w.length<=3) return w;
+  let s=w;
+  if(s.length>5&&/ies$/.test(s)) s=s.slice(0,-3)+"y";
+  else if(s.length>5&&/(sses|xes|ches|shes)$/.test(s)) s=s.slice(0,-2);
+  else if(s.length>3&&/[^su]s$/.test(s)) s=s.slice(0,-1);
+  if(s.length>5&&/ingly$/.test(s)) s=s.slice(0,-5);
+  else if(s.length>5&&/edly$/.test(s)) s=s.slice(0,-4);
+  else if(s.length>5&&/ing$/.test(s)) s=s.slice(0,-3);
+  else if(s.length>4&&/ed$/.test(s)) s=s.slice(0,-2);
+  else if(s.length>5&&/ly$/.test(s)) s=s.slice(0,-2);
+  if(s.length>6&&/ness$/.test(s)) s=s.slice(0,-4);
+  else if(s.length>6&&/ment$/.test(s)) s=s.slice(0,-4);
+  else if(s.length>6&&/(ation|ition)$/.test(s)) s=s.slice(0,-5)+"e";
+  else if(s.length>5&&/(tion|sion)$/.test(s)) s=s.slice(0,-3);
+  else if(s.length>6&&/(ity|ous|ive|ful|ise|ize)$/.test(s)) s=s.slice(0,-3);
+  else if(s.length>5&&/(er|or|al)$/.test(s)) s=s.slice(0,-2);
+  if(s.length>4&&/(.)\1$/.test(s)&&!/(ss|ll)$/.test(s)) s=s.slice(0,-1);
+  if(s.length>4&&/e$/.test(s)) s=s.slice(0,-1);
+  // Dutch verb/plural endings on words the concept map didn't know
+  if(s.length>5&&/en$/.test(s)&&!/(een|ien|ken|ten|sen|ren)$/.test(s)) s=s.slice(0,-2);
+  return s;
+}
+function scTerms(text){ return scNorm(text).filter(w=>!SC_STOP.has(w)).map(scStem).filter(w=>w.length>1&&!SC_STOP.has(w)); }
+function scSame(a,b){
+  if(a===b) return true;
+  const num=/^\d/.test(a)||/^\d/.test(b); if(num) return false;
+  const s=a.length<=b.length?a:b, l=a.length<=b.length?b:a;
+  if(s.length>=4&&l.startsWith(s)&&l.length-s.length<=3) return true;
+  if(s.length>=5&&Math.abs(a.length-b.length)<=1){ // one dictation slip
+    let i=0,j=0,d=0; while(i<a.length&&j<b.length){ if(a[i]===b[j]){i++;j++;} else { d++; if(d>1) return false; if(a.length>b.length) i++; else if(b.length>a.length) j++; else {i++;j++;} } }
+    return d+(a.length-i)+(b.length-j)<=1;
+  }
+  return false;
+}
+let scIdf=null;
+function scBuildIdf(){
+  const df=new Map(); let N=0;
+  allCards().forEach(c=>c.k.forEach(k=>{ N++; new Set(scTerms(k)).forEach(t=>df.set(t,(df.get(t)||0)+1)); }));
+  scIdf={N, df};
+}
+function scWeight(t){
+  if(!scIdf) scBuildIdf();
+  const df=scIdf.df.get(t)||0; let w=Math.log((scIdf.N+1)/(df+0.5)); if(w<0.3) w=0.3;
+  if(/^\d/.test(t)) w+=1.2; // numbers are specific
+  return w;
+}
+/* Returns {points:[{text,status:"hit"|"part"|"miss",cov}], suggest:0..5, hits, parts, lang:"nl"|"en", words} */
+function smartCheck(card, answer){
+  const ansTok=scNorm(answer); const words=ansTok.length;
+  const nlHits=ansTok.filter(w=>["de","het","een","niet","dat","ik","je","is","en","van","dus","maar","ook","dan","als","wat","zijn","voor","met","dit","hebben","heeft","om","te","bij","naar","nog","wel"].includes(w)).length;
+  const lang=(words>=6&&nlHits/words>0.18)?"nl":"en";
+  const ans=scTerms(answer); const ansSet=new Set(ans);
+  const qTerms=new Set(scTerms(card.q));
+  const giveUp=/\b(i don'?t know|no idea|geen idee|weet (ik|het) niet|pass)\b/i.test(String(answer||""))&&words<12;
+  const has=t=>{ if(ansSet.has(t)) return 1; for(const a of ansSet) if(scSame(t,a)) return 0.85; return 0; };
+  const points=card.k.map(k=>{
+    const terms=[...new Set(scTerms(k))]; if(!terms.length) return {text:k,status:"part",cov:0.5};
+    let tot=0, got=0, n=0;
+    terms.forEach(t=>{ let w=scWeight(t); if(qTerms.has(t)) w*=0.35; tot+=w; const h=has(t); if(h){ got+=w*h; if(h===1||w>1) n++; } });
+    // adjacent pairs from the key point found close together in the answer
+    let pairs=0, pairHits=0;
+    for(let i=0;i+1<terms.length;i++){ pairs++; const a=ans.findIndex(x=>scSame(x,terms[i])); if(a>=0&&ans.slice(Math.max(0,a-3),a+4).some(x=>scSame(x,terms[i+1]))) pairHits++; }
+    let cov=tot?got/tot:0; if(pairs&&pairHits) cov=Math.min(1,cov+0.12*pairHits/pairs);
+    const status=giveUp?"miss":(cov>=0.55||(cov>=0.42&&n>=2))?"hit":(cov>=0.22||(n>=1&&cov>=0.15))?"part":"miss";
+    return {text:k,status,cov:Math.round(cov*100)/100};
+  });
+  const hits=points.filter(p=>p.status==="hit").length, parts=points.filter(p=>p.status==="part").length;
+  const frac=(hits+0.5*parts)/Math.max(1,points.length);
+  let suggest= frac>=0.8?4 : frac>=0.6?3 : frac>=0.35?2 : frac>0?1 : 0;
+  if(giveUp) suggest=0;
+  if(words<8) suggest=Math.min(suggest,1); else if(words<18) suggest=Math.min(suggest,3);
+  return {points, suggest, hits, parts, lang, words};
+}
+
 
 /* ---------- voice: recorded neural clips first, best system voice as fallback ---------- */
 const AUDIO = /*AUDIO-START*/{"l-AI1":"audio/l-AI1.mp4","l-AI2":"audio/l-AI2.mp4","l-AI3":"audio/l-AI3.mp4","l-AI4":"audio/l-AI4.mp4","l-AI5":"audio/l-AI5.mp4","l-AI6":"audio/l-AI6.mp4","l-AI7":"audio/l-AI7.mp4","l-AI8":"audio/l-AI8.mp4","l-F1":"audio/l-F1.mp4","l-F2":"audio/l-F2.mp4","l-F3":"audio/l-F3.mp4","l-F4":"audio/l-F4.mp4","l-F5":"audio/l-F5.mp4","l-F6":"audio/l-F6.mp4","l-G1":"audio/l-G1.mp4","l-G10":"audio/l-G10.mp4","l-G2":"audio/l-G2.mp4","l-G3":"audio/l-G3.mp4","l-G4":"audio/l-G4.mp4","l-G5":"audio/l-G5.mp4","l-G6":"audio/l-G6.mp4","l-G7":"audio/l-G7.mp4","l-G8":"audio/l-G8.mp4","l-G9":"audio/l-G9.mp4","l-HE1":"audio/l-HE1.mp4","l-HE2":"audio/l-HE2.mp4","l-HE3":"audio/l-HE3.mp4","l-HE4":"audio/l-HE4.mp4","l-HE5":"audio/l-HE5.mp4","l-HE6":"audio/l-HE6.mp4","l-HE7":"audio/l-HE7.mp4","l-HE8":"audio/l-HE8.mp4","l-L1":"audio/l-L1.mp4","l-L10":"audio/l-L10.mp4","l-L11":"audio/l-L11.mp4","l-L12":"audio/l-L12.mp4","l-L2":"audio/l-L2.mp4","l-L3":"audio/l-L3.mp4","l-L4":"audio/l-L4.mp4","l-L5":"audio/l-L5.mp4","l-L6":"audio/l-L6.mp4","l-L7":"audio/l-L7.mp4","l-L8":"audio/l-L8.mp4","l-L9":"audio/l-L9.mp4","l-MI1":"audio/l-MI1.mp4","l-MI2":"audio/l-MI2.mp4","l-MI3":"audio/l-MI3.mp4","l-MI4":"audio/l-MI4.mp4","l-MI5":"audio/l-MI5.mp4","l-MI6":"audio/l-MI6.mp4","l-MI7":"audio/l-MI7.mp4","l-MI8":"audio/l-MI8.mp4","l-MO1":"audio/l-MO1.mp4","l-MO2":"audio/l-MO2.mp4","l-MO3":"audio/l-MO3.mp4","l-MO4":"audio/l-MO4.mp4","l-MO5":"audio/l-MO5.mp4","l-MO6":"audio/l-MO6.mp4","l-MO7":"audio/l-MO7.mp4","l-MO8":"audio/l-MO8.mp4","l-N1":"audio/l-N1.mp4","l-N2":"audio/l-N2.mp4","l-N3":"audio/l-N3.mp4","l-N4":"audio/l-N4.mp4","l-N5":"audio/l-N5.mp4","l-N6":"audio/l-N6.mp4","l-N7":"audio/l-N7.mp4","l-N8":"audio/l-N8.mp4","l-OF1":"audio/l-OF1.mp4","l-OF2":"audio/l-OF2.mp4","l-OF3":"audio/l-OF3.mp4","l-OF4":"audio/l-OF4.mp4","l-OF5":"audio/l-OF5.mp4","l-OF6":"audio/l-OF6.mp4","l-OF7":"audio/l-OF7.mp4","l-OF8":"audio/l-OF8.mp4","l-P1":"audio/l-P1.mp4","l-P10":"audio/l-P10.mp4","l-P11":"audio/l-P11.mp4","l-P12":"audio/l-P12.mp4","l-P2":"audio/l-P2.mp4","l-P3":"audio/l-P3.mp4","l-P4":"audio/l-P4.mp4","l-P5":"audio/l-P5.mp4","l-P6":"audio/l-P6.mp4","l-P7":"audio/l-P7.mp4","l-P8":"audio/l-P8.mp4","l-P9":"audio/l-P9.mp4","l-PE1":"audio/l-PE1.mp4","l-PE2":"audio/l-PE2.mp4","l-PE3":"audio/l-PE3.mp4","l-PE4":"audio/l-PE4.mp4","l-PE5":"audio/l-PE5.mp4","l-PE6":"audio/l-PE6.mp4","l-PE7":"audio/l-PE7.mp4","l-PE8":"audio/l-PE8.mp4","l-SA1":"audio/l-SA1.mp4","l-SA2":"audio/l-SA2.mp4","l-SA3":"audio/l-SA3.mp4","l-SA4":"audio/l-SA4.mp4","l-SA5":"audio/l-SA5.mp4","l-SA6":"audio/l-SA6.mp4","l-SA7":"audio/l-SA7.mp4","l-SA8":"audio/l-SA8.mp4","l-SM1":"audio/l-SM1.mp4","l-SM2":"audio/l-SM2.mp4","l-SM3":"audio/l-SM3.mp4","l-SM4":"audio/l-SM4.mp4","l-SM5":"audio/l-SM5.mp4","l-SM6":"audio/l-SM6.mp4","l-SM7":"audio/l-SM7.mp4","l-SM8":"audio/l-SM8.mp4","l-WI1":"audio/l-WI1.mp4","l-WI2":"audio/l-WI2.mp4","l-WI3":"audio/l-WI3.mp4","l-WI4":"audio/l-WI4.mp4","l-WI5":"audio/l-WI5.mp4","l-WI6":"audio/l-WI6.mp4","l-WI7":"audio/l-WI7.mp4","l-WI8":"audio/l-WI8.mp4","m-backprofit":"audio/m-backprofit.mp4","m-breakeven":"audio/m-breakeven.mp4","m-compound":"audio/m-compound.mp4","m-divide":"audio/m-divide.mp4","m-ev":"audio/m-ev.mp4","m-fairodds":"audio/m-fairodds.mp4","m-frac":"audio/m-frac.mp4","m-implied":"audio/m-implied.mp4","m-kelly":"audio/m-kelly.mp4","m-lay":"audio/m-lay.mp4","m-pctchg":"audio/m-pctchg.mp4","m-pctof":"audio/m-pctof.mp4","m-se":"audio/m-se.mp4","m-sqrt":"audio/m-sqrt.mp4","q-AI1":"audio/q-AI1.mp4","q-AI2":"audio/q-AI2.mp4","q-AI3":"audio/q-AI3.mp4","q-AI4":"audio/q-AI4.mp4","q-AI5":"audio/q-AI5.mp4","q-AI6":"audio/q-AI6.mp4","q-AI7":"audio/q-AI7.mp4","q-AI8":"audio/q-AI8.mp4","q-F1":"audio/q-F1.mp4","q-F2":"audio/q-F2.mp4","q-F3":"audio/q-F3.mp4","q-F4":"audio/q-F4.mp4","q-F5":"audio/q-F5.mp4","q-F6":"audio/q-F6.mp4","q-G1":"audio/q-G1.mp4","q-G10":"audio/q-G10.mp4","q-G2":"audio/q-G2.mp4","q-G3":"audio/q-G3.mp4","q-G4":"audio/q-G4.mp4","q-G5":"audio/q-G5.mp4","q-G6":"audio/q-G6.mp4","q-G7":"audio/q-G7.mp4","q-G8":"audio/q-G8.mp4","q-G9":"audio/q-G9.mp4","q-HE1":"audio/q-HE1.mp4","q-HE2":"audio/q-HE2.mp4","q-HE3":"audio/q-HE3.mp4","q-HE4":"audio/q-HE4.mp4","q-HE5":"audio/q-HE5.mp4","q-HE6":"audio/q-HE6.mp4","q-HE7":"audio/q-HE7.mp4","q-HE8":"audio/q-HE8.mp4","q-L1":"audio/q-L1.mp4","q-L10":"audio/q-L10.mp4","q-L11":"audio/q-L11.mp4","q-L12":"audio/q-L12.mp4","q-L2":"audio/q-L2.mp4","q-L3":"audio/q-L3.mp4","q-L4":"audio/q-L4.mp4","q-L5":"audio/q-L5.mp4","q-L6":"audio/q-L6.mp4","q-L7":"audio/q-L7.mp4","q-L8":"audio/q-L8.mp4","q-L9":"audio/q-L9.mp4","q-MI1":"audio/q-MI1.mp4","q-MI2":"audio/q-MI2.mp4","q-MI3":"audio/q-MI3.mp4","q-MI4":"audio/q-MI4.mp4","q-MI5":"audio/q-MI5.mp4","q-MI6":"audio/q-MI6.mp4","q-MI7":"audio/q-MI7.mp4","q-MI8":"audio/q-MI8.mp4","q-MO1":"audio/q-MO1.mp4","q-MO2":"audio/q-MO2.mp4","q-MO3":"audio/q-MO3.mp4","q-MO4":"audio/q-MO4.mp4","q-MO5":"audio/q-MO5.mp4","q-MO6":"audio/q-MO6.mp4","q-MO7":"audio/q-MO7.mp4","q-MO8":"audio/q-MO8.mp4","q-N1":"audio/q-N1.mp4","q-N2":"audio/q-N2.mp4","q-N3":"audio/q-N3.mp4","q-N4":"audio/q-N4.mp4","q-N5":"audio/q-N5.mp4","q-N6":"audio/q-N6.mp4","q-N7":"audio/q-N7.mp4","q-N8":"audio/q-N8.mp4","q-OF1":"audio/q-OF1.mp4","q-OF2":"audio/q-OF2.mp4","q-OF3":"audio/q-OF3.mp4","q-OF4":"audio/q-OF4.mp4","q-OF5":"audio/q-OF5.mp4","q-OF6":"audio/q-OF6.mp4","q-OF7":"audio/q-OF7.mp4","q-OF8":"audio/q-OF8.mp4","q-P1":"audio/q-P1.mp4","q-P10":"audio/q-P10.mp4","q-P11":"audio/q-P11.mp4","q-P12":"audio/q-P12.mp4","q-P2":"audio/q-P2.mp4","q-P3":"audio/q-P3.mp4","q-P4":"audio/q-P4.mp4","q-P5":"audio/q-P5.mp4","q-P6":"audio/q-P6.mp4","q-P7":"audio/q-P7.mp4","q-P8":"audio/q-P8.mp4","q-P9":"audio/q-P9.mp4","q-PE1":"audio/q-PE1.mp4","q-PE2":"audio/q-PE2.mp4","q-PE3":"audio/q-PE3.mp4","q-PE4":"audio/q-PE4.mp4","q-PE5":"audio/q-PE5.mp4","q-PE6":"audio/q-PE6.mp4","q-PE7":"audio/q-PE7.mp4","q-PE8":"audio/q-PE8.mp4","q-SA1":"audio/q-SA1.mp4","q-SA2":"audio/q-SA2.mp4","q-SA3":"audio/q-SA3.mp4","q-SA4":"audio/q-SA4.mp4","q-SA5":"audio/q-SA5.mp4","q-SA6":"audio/q-SA6.mp4","q-SA7":"audio/q-SA7.mp4","q-SA8":"audio/q-SA8.mp4","q-SM1":"audio/q-SM1.mp4","q-SM2":"audio/q-SM2.mp4","q-SM3":"audio/q-SM3.mp4","q-SM4":"audio/q-SM4.mp4","q-SM5":"audio/q-SM5.mp4","q-SM6":"audio/q-SM6.mp4","q-SM7":"audio/q-SM7.mp4","q-SM8":"audio/q-SM8.mp4","q-WI1":"audio/q-WI1.mp4","q-WI2":"audio/q-WI2.mp4","q-WI3":"audio/q-WI3.mp4","q-WI4":"audio/q-WI4.mp4","q-WI5":"audio/q-WI5.mp4","q-WI6":"audio/q-WI6.mp4","q-WI7":"audio/q-WI7.mp4","q-WI8":"audio/q-WI8.mp4","u-surf2":"audio/u-surf2.mp4"}/*AUDIO-END*/;
@@ -1709,13 +1819,13 @@ function finishCard(score, g, answer){
   updateBadge();
   const d=INTERVALS[np.box];
   drill.dueText="This question comes back "+gapText(d)+".";
-  drill.results.push({q:card.q, score, gap:gapText(d)});
+  drill.results.push({q:card.q, score, gap:gapText(d), self:!!(g&&g.self), ans:String(answer||""), k:card.k});
 }
 
 async function submitAnswer(){
   const d=drill, card=d.cards[d.i], ans=(d.answer||"").trim();
   if(ans.length<3){ d.error="Say or type an answer first, or tap “I don't know”."; renderDrill(); return; }
-  if(!gradingAvailable()){ d.phase="selfgrade"; d.error=null; renderDrill(); return; }
+  if(!gradingAvailable()){ toSelfGrade(d, card, ans); renderDrill(); return; }
   d.phase="grading"; d.error=null; d.ctl=new AbortController(); renderDrill();
   try{
     const g=await callGrade(gradePrompt(card,ans), d.ctl.signal);
@@ -1726,7 +1836,8 @@ async function submitAnswer(){
   }catch(e){
     if(drill!==d) return;
     const msg=sampleErrMsg(e);
-    d.phase=gradingOff?"selfgrade":"ask"; d.error=msg||null;
+    if(gradingOff) toSelfGrade(d, card, ans); else d.phase="ask";
+    d.error=msg||null;
   }
   renderDrill();
 }
@@ -1831,10 +1942,21 @@ function renderReaderInner(root){
   });
   root.append(el("div",{class:"row"},el("button",{class:"primary big",onclick:()=>startDrill(tid)},"Drill this topic now")));
 }
+function toSelfGrade(d, card, ans){
+  d.phase="selfgrade"; d.error=null; d.smart=null;
+  try{ d.smart=smartCheck(card, ans); }catch(e){ d.smart=null; }
+}
 function selfScore(n){
-  const d=drill, card=d.cards[d.i];
-  d.grade1={score:n, verdict:"You scored this yourself.", got:[], missed:[], model:"", followup:""};
+  const d=drill, card=d.cards[d.i], sc=d.smart;
+  const got=sc?sc.points.filter(p=>p.status==="hit").map(p=>p.text):[];
+  const missed=sc?sc.points.filter(p=>p.status!=="hit").map(p=>p.text):[];
+  const verdict=sc?("Smart check heard "+sc.hits+" of "+sc.points.length+" key points in your words. You scored it "+n+"/5 yourself."):"You scored this yourself.";
+  d.grade1={score:n, verdict, got, missed, model:"", followup:"", self:true};
   finishCard(n,d.grade1,d.answer); d.phase="graded"; renderDrill();
+}
+function sessionReviewPrompt(rs){
+  const items=rs.filter(r=>r.self&&r.ans).slice(0,8).map((r,i)=>"Q"+(i+1)+": "+r.q+"\nKey points: "+r.k.join("; ")+"\nMy answer (dictated by voice, I scored it "+r.score+"/5 offline): "+String(r.ans).slice(0,1400));
+  return "I answered these learning-drill questions offline and scored myself. Grade each one from 0 to 5 (0 wrong or blank, 3 most key points but shallow, 5 every key point plus my own example, clear enough to teach a beginner). For each: your score, what I got right, what I missed, and a model answer in 3 sentences. Finish with the single most important thing for me to fix, and one sharp follow-up question on my weakest answer.\n\n"+items.join("\n\n");
 }
 function stopGrading(){ if(drill&&drill.ctl) try{ drill.ctl.abort(); }catch(e){} }
 
@@ -1899,12 +2021,18 @@ function renderDrillInner(root){
 
   if(d.phase==="grading"){ root.append(thinking("Claude is grading your answer…")); return; }
   if(d.phase==="selfgrade"){
+    const sc=d.smart; const ST={hit:["✓","Heard"],part:["~","Partly"],miss:["✗","Not heard"]};
     root.append(el("section",{class:"panel"},
       d.error?el("p",{class:"err",role:"alert"},d.error):null,
-      el("h3",null,"A strong answer covers"),
-      el("ul",null,card.k.map(k=>el("li",null,k))),
+      el("h3",null,sc?"Smart check · what a strong answer covers":"A strong answer covers"),
+      sc?el("ul",{class:"kp","aria-label":"Key points and whether your answer covered them"},sc.points.map(p=>el("li",{class:p.status},
+          el("span",{class:"mk","aria-hidden":"true"},ST[p.status][0]),
+          el("span",null,el("span",{class:"st"},ST[p.status][1]),p.text))))
+        :el("ul",null,card.k.map(k=>el("li",null,k))),
+      sc?el("p",{class:"tip"},"Matched your words against each point, offline. It can't judge reasoning or an example, so you have the final say."+(sc.lang==="nl"?" Dutch answers are matched more loosely.":"")):null,
       el("h3",null,"How did you do?"),
-      el("div",{class:"selfgrade"},[0,1,2,3,4,5].map(n=>el("button",{onclick:()=>selfScore(n),"aria-label":n+" out of 5, "+SCORE_LABEL[n]},String(n)))),
+      sc?el("div",{class:"sugg"},el("span",{class:"lab"},"Suggested"),el("b",null,String(sc.suggest)),el("span",{class:"lab"},SCORE_LABEL[sc.suggest]),el("span",{class:"muted"},sc.suggest>=4?"Tap 5 if you also gave an example of your own.":sc.suggest>=2?"Tap higher if you said it in other words.":"")):null,
+      el("div",{class:"selfgrade"},[0,1,2,3,4,5].map(n=>el("button",{class:(sc&&n===sc.suggest)?"suggest":null,onclick:()=>selfScore(n),"aria-label":n+" out of 5, "+SCORE_LABEL[n]+((sc&&n===sc.suggest)?", suggested":"")},String(n)))),
       el("p",{class:"tip"},"0 missed · 3 most points · 5 could teach it with your own example"),
       (!IN_CLAUDE&&navigator.onLine)?el("div",{class:"row"},el("a",{class:"btnlink",href:"https://claude.ai/new?q="+encodeURIComponent(humanGradePrompt(card,d.answer)),target:"_blank",rel:"noopener"},"Ask Claude for feedback")):null
     ));
@@ -1966,7 +2094,8 @@ function renderSummary(root){
     el("div",{class:"row"},
       el("button",{class:"primary big",onclick:exitDrill},"Back to today"),
       el("button",{class:"ghost",onclick:()=>startDrill(drill.topic)},due||!crossed?"Five more":"Five extra")
-    )
+    ),
+    (!IN_CLAUDE&&navigator.onLine&&rs.some(r=>r.self&&r.ans))?el("div",{class:"row"},el("a",{class:"btnlink",href:"https://claude.ai/new?q="+encodeURIComponent(sessionReviewPrompt(rs)),target:"_blank",rel:"noopener"},"Ask Claude to review this session")):null
   );
 }
 

@@ -1,4 +1,4 @@
-const SHELL="tid-shell-61fd5bd328", MEDIA="tid-media-v1";
+const SHELL="tid-shell-ec36e161e7", MEDIA="tid-media-v1";
 const CORE=["./","./index.html","./manifest.webmanifest","./icon-180.png","./icon-192.png","./icon-512.png"];
 self.addEventListener("install",e=>{ e.waitUntil(caches.open(SHELL).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())); });
 self.addEventListener("activate",e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.indexOf("tid-shell-")===0&&k!==SHELL).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });

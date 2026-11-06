@@ -1,0 +1,45 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Teach-It Drills//Reminders//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Drills
+X-WR-CALDESC:Daily reminders for Teach-It Drills
+REFRESH-INTERVAL;VALUE=DURATION:P1D
+X-PUBLISHED-TTL:P1D
+BEGIN:VEVENT
+UID:drills-morning-1000@teach-it-drills
+DTSTAMP:20261106T000000Z
+DTSTART:20261106T100000
+DTEND:20261106T101500
+RRULE:FREQ=DAILY
+SUMMARY:Drills: today's five
+DESCRIPTION:Five spoken questions\, then tick off your set. Open Drills fr
+ om your home screen\, or: https://davyvg-dev.github.io/teach-it-drills/
+URL:https://davyvg-dev.github.io/teach-it-drills/
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Drills: today's five
+TRIGGER:-PT0M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:drills-evening-2030@teach-it-drills
+DTSTAMP:20261106T000000Z
+DTSTART:20261106T203000
+DTEND:20261106T204500
+RRULE:FREQ=DAILY
+SUMMARY:Drills: close the set
+DESCRIPTION:Tick off today's habits and write your win of the day. Open Dr
+ ills from your home screen\, or: https://davyvg-dev.github.io/teach-it-dr
+ ills/
+URL:https://davyvg-dev.github.io/teach-it-drills/
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Drills: close the set
+TRIGGER:-PT0M
+END:VALARM
+END:VEVENT
+END:VCALENDAR
